@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      resumes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scans: {
+        Row: {
+          ats_issues: Json
+          created_at: string
+          id: string
+          jd_text: string
+          jd_title: string | null
+          match_score: number
+          matched_keywords: Json
+          missing_keywords: Json
+          resume_id: string | null
+          resume_name: string | null
+          resume_text: string
+          section_scores: Json
+          suggestions: Json
+          user_id: string
+        }
+        Insert: {
+          ats_issues?: Json
+          created_at?: string
+          id?: string
+          jd_text: string
+          jd_title?: string | null
+          match_score: number
+          matched_keywords?: Json
+          missing_keywords?: Json
+          resume_id?: string | null
+          resume_name?: string | null
+          resume_text: string
+          section_scores?: Json
+          suggestions?: Json
+          user_id: string
+        }
+        Update: {
+          ats_issues?: Json
+          created_at?: string
+          id?: string
+          jd_text?: string
+          jd_title?: string | null
+          match_score?: number
+          matched_keywords?: Json
+          missing_keywords?: Json
+          resume_id?: string | null
+          resume_name?: string | null
+          resume_text?: string
+          section_scores?: Json
+          suggestions?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scans_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
