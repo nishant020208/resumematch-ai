@@ -27,9 +27,9 @@ function ensureWorker() {
   return worker;
 }
 
-export function onProgress(cb: (p: { status: string; progress?: number; file?: string }) => void) {
+export function onProgress(cb: (p: { status: string; progress?: number; file?: string }) => void): () => void {
   listeners.add(cb);
-  return () => listeners.delete(cb);
+  return () => { listeners.delete(cb); };
 }
 
 export async function initModel() {

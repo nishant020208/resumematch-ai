@@ -34,7 +34,7 @@ function ScanPage() {
   const [resumes, setResumes] = useState<{ id: string; name: string; content: string }[]>([]);
   const [pickedResumeId, setPickedResumeId] = useState<string>("");
 
-  useEffect(() => { const unsub = onProgress(setProgress); return () => { unsub; }; }, []);
+  useEffect(() => onProgress(setProgress), []);
   useEffect(() => {
     if (!user) return;
     supabase.from("resumes").select("id,name,content").order("created_at", { ascending: false }).limit(10).then(({ data }) => {
