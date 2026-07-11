@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
+import { OnlineBadge } from "./online-badge";
 
 const authedLinks = [
   { to: "/scan", label: "scan" },
@@ -53,6 +54,7 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-1">
+          <OnlineBadge />
           <ThemeToggle />
           {user ? (
             <Button variant="ghost" size="sm" onClick={signOut} className="hidden md:inline-flex font-mono text-xs">
