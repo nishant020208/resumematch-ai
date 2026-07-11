@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 // Runs Transformers.js MiniLM entirely off the main thread.
-import { pipeline, env } from "@xenova/transformers";
+import { pipeline, env } from "@huggingface/transformers";
 
 // Cache models in IndexedDB via HTTP cache, allow remote CDN (default)
 env.allowLocalModels = false;
