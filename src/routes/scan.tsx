@@ -10,10 +10,16 @@ import { PrivacyBadge } from "@/components/privacy-badge";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { analyze, type AnalyzeResult } from "@/lib/analyze";
 import { initModel, onProgress } from "@/lib/embed-client";
+import { fetchJdFromUrl } from "@/lib/jd-fetch";
+import { SkillRadar } from "@/components/skill-radar";
+import { ResumeHeatmap } from "@/components/resume-heatmap";
+import { InterviewPanel } from "@/components/interview-panel";
+import { ShareCard } from "@/components/share-card";
+import { LineOptimizer } from "@/components/line-optimizer";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Play, Save, Sparkles, AlertTriangle, FileText } from "lucide-react";
+import { Play, Save, Sparkles, AlertTriangle, FileText, Link2, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/scan")({
@@ -33,6 +39,8 @@ function ScanPage() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [resumes, setResumes] = useState<{ id: string; name: string; content: string }[]>([]);
   const [pickedResumeId, setPickedResumeId] = useState<string>("");
+  const [jdUrl, setJdUrl] = useState("");
+  const [fetching, setFetching] = useState(false);
 
   useEffect(() => onProgress(setProgress), []);
   useEffect(() => {
@@ -97,6 +105,18 @@ function ScanPage() {
       .then(({ data }) => data && setResumes(data));
   };
 
+  const fetchUrl = async () => {
+    if (!jdUrl.trim()) return;
+    setFetching(true);
+    try {
+      const text = await fetchJdFromUrl(jdUrl);
+      setJd(text);
+      toast.success("JD imported from URL.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't fetch that URL");
+    } finally { setFetching(false); }
+  };
+
   return (
     <PageShell>
       <ErrorBoundary>
@@ -147,6 +167,24 @@ function ScanPage() {
                 </div>
                 <FileDrop label=".pdf .docx .txt" onText={setJd} />
               </div>
+              <div className="mb-3 flex gap-2">
+                <div className="relative flex-1">
+                  <Link2 className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="url" value={jdUrl} onChange={e => setJdUrl(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); fetchUrl(); } }}
+                    placeholder="or paste a job posting URL…"
+                    className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-1.5 font-mono text-xs"
+                  />
+                </div>
+                <button
+                  type="button" onClick={fetchUrl} disabled={fetching || !jdUrl.trim()}
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs hover:text-foreground disabled:opacity-50"
+                >
+                  {fetching ? <Loader2 className="h-3 w-3 animate-spin" /> : "fetch"}
+                </button>
+              </div>
+              <p className="mb-2 font-mono text-[10px] text-muted-foreground">Many job sites block cross-origin fetches — paste manually as fallback.</p>
               <textarea value={jd} onChange={e => setJd(e.target.value)}
                 placeholder="Paste the job description…"
                 className="h-[calc(18rem+37px)] w-full resize-none rounded-md border border-input bg-background p-3 font-mono text-xs leading-relaxed outline-none focus:border-[color:var(--acid)]/50" />
@@ -172,19 +210,20 @@ function ScanPage() {
             </div>
           )}
 
-          {result && <Results r={result} />}
+          {result && <Results r={result} resume={resume} />}
         </div>
       </ErrorBoundary>
     </PageShell>
   );
 }
 
-function Results({ r }: { r: AnalyzeResult }) {
+function Results({ r, resume }: { r: AnalyzeResult; resume: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mt-10 space-y-6">
       <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
         <TiltCard className="grid place-items-center min-w-[260px]">
           <ScoreRing score={r.score} />
+          <div className="mt-4"><ShareCard score={r.score} label={`${r.score}% match to this JD`} /></div>
         </TiltCard>
         <TiltCard>
           <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">section breakdown</h3>
@@ -205,6 +244,12 @@ function Results({ r }: { r: AnalyzeResult }) {
           </div>
         </TiltCard>
       </div>
+
+      <TiltCard>
+        <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">skill coverage radar</h3>
+        <p className="mt-1 text-[11px] text-muted-foreground">Resume vs JD demand across 5 skill categories.</p>
+        <SkillRadar data={r.categoryScores} />
+      </TiltCard>
 
       <div className="grid gap-6 md:grid-cols-2">
         <TiltCard>
@@ -229,6 +274,10 @@ function Results({ r }: { r: AnalyzeResult }) {
           ))}
         </ul>
       </TiltCard>
+
+      <TiltCard><LineOptimizer resume={resume} missing={r.missing} jdVector={r.jdVector} /></TiltCard>
+      <TiltCard><ResumeHeatmap lines={r.lineScores} /></TiltCard>
+      {r.missing.length > 0 && <TiltCard><InterviewPanel missing={r.missing} /></TiltCard>}
 
       {r.atsIssues.length > 0 && (
         <TiltCard>
