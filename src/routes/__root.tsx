@@ -100,6 +100,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
+      { rel: "icon", type: "image/png", href: "/icons/icon-192.png" },
+    ],
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#c6ff3d" },
+      { title: "Resonate" },
+      { name: "description", content: "Score any resume against any job description locally in your browser. No uploads, no cloud AI, no data leaks. Built for engineering job seekers." },
+      { property: "og:title", content: "Resonate" },
+      { property: "og:description", content: "Score any resume against any job description locally in your browser. No uploads, no cloud AI, no data leaks. Built for engineering job seekers." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Resonate" },
+      { name: "twitter:description", content: "Score any resume against any job description locally in your browser. No uploads, no cloud AI, no data leaks. Built for engineering job seekers." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/80de1ef8-3901-4cae-94ea-e225baf1c271" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/80de1ef8-3901-4cae-94ea-e225baf1c271" },
     ],
   }),
   shellComponent: RootShell,
@@ -133,6 +151,10 @@ function RootComponent() {
     });
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  useEffect(() => {
+    import("@/lib/pwa-register").then(m => m.registerPwa());
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
