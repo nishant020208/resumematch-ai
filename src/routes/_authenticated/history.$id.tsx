@@ -5,6 +5,11 @@ import { PageShell } from "@/components/page-shell";
 import { TiltCard } from "@/components/tilt-card";
 import { ScoreRing } from "@/components/score-ring";
 import { KeywordChips } from "@/components/keyword-chips";
+import { SkillRadar } from "@/components/skill-radar";
+import { ShareCard } from "@/components/share-card";
+import { InterviewPanel } from "@/components/interview-panel";
+import { categoryScores } from "@/lib/keywords";
+import { useMemo } from "react";
 import { ArrowLeft, Download } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -27,6 +32,10 @@ function ScanDetail() {
       return data;
     },
   });
+  const catScores = useMemo(
+    () => q.data ? categoryScores(q.data.resume_text, q.data.jd_text) : [],
+    [q.data],
+  );
 
   const exportPdf = async () => {
     if (!q.data) return;
@@ -51,6 +60,8 @@ function ScanDetail() {
   if (q.isLoading) return <PageShell><div className="mx-auto max-w-6xl p-10 text-sm text-muted-foreground">loading…</div></PageShell>;
   if (!q.data) return null;
   const s = q.data;
+  const score = Math.round(Number(s.match_score));
+  const missing = ((s.missing_keywords as any) ?? []) as { keyword: string; count: number }[];
 
   return (
     <PageShell>
@@ -60,7 +71,10 @@ function ScanDetail() {
           <button onClick={exportPdf} className="inline-flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs hover:text-foreground"><Download className="h-3 w-3" /> export pdf</button>
         </div>
         <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
-          <TiltCard className="grid place-items-center min-w-[260px]"><ScoreRing score={Math.round(Number(s.match_score))} /></TiltCard>
+          <TiltCard className="grid place-items-center min-w-[260px]">
+            <ScoreRing score={score} />
+            <div className="mt-4"><ShareCard score={score} label={`${score}% match to this JD`} /></div>
+          </TiltCard>
           <TiltCard>
             <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">meta</h3>
             <dl className="mt-4 space-y-2 font-mono text-xs">
@@ -69,14 +83,20 @@ function ScanDetail() {
             </dl>
           </TiltCard>
         </div>
+        <TiltCard className="mt-6">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">skill coverage radar</h3>
+          <p className="mt-1 text-[11px] text-muted-foreground">Resume vs JD demand across 5 skill categories · recomputed locally.</p>
+          <SkillRadar data={catScores} />
+        </TiltCard>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <TiltCard><h3 className="font-mono text-xs uppercase text-[color:var(--success)]">matched</h3><div className="mt-3"><KeywordChips items={(s.matched_keywords as any) ?? []} variant="matched" /></div></TiltCard>
-          <TiltCard><h3 className="font-mono text-xs uppercase text-[color:var(--danger)]">missing</h3><div className="mt-3"><KeywordChips items={(s.missing_keywords as any) ?? []} variant="missing" /></div></TiltCard>
+          <TiltCard><h3 className="font-mono text-xs uppercase text-[color:var(--danger)]">missing</h3><div className="mt-3"><KeywordChips items={missing} variant="missing" /></div></TiltCard>
         </div>
         <TiltCard className="mt-6">
           <h3 className="font-mono text-xs uppercase text-muted-foreground">suggestions</h3>
           <ul className="mt-3 space-y-2">{((s.suggestions as any[]) ?? []).map((g: any, i: number) => (<li key={i} className="text-sm">• {g.text}</li>))}</ul>
         </TiltCard>
+        {missing.length > 0 && <TiltCard className="mt-6"><InterviewPanel missing={missing} /></TiltCard>}
         <TiltCard className="mt-6">
           <h3 className="font-mono text-xs uppercase text-muted-foreground">job description</h3>
           <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted-foreground">{s.jd_text}</pre>

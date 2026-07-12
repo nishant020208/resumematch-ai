@@ -9,6 +9,7 @@ import { OnlineBadge } from "./online-badge";
 
 const authedLinks = [
   { to: "/scan", label: "scan" },
+  { to: "/batch", label: "batch" },
   { to: "/dashboard", label: "dashboard" },
   { to: "/history", label: "history" },
   { to: "/resumes", label: "resumes" },
