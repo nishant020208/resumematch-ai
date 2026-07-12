@@ -32,6 +32,10 @@ function ScanDetail() {
       return data;
     },
   });
+  const catScores = useMemo(
+    () => q.data ? categoryScores(q.data.resume_text, q.data.jd_text) : [],
+    [q.data],
+  );
 
   const exportPdf = async () => {
     if (!q.data) return;
@@ -58,8 +62,6 @@ function ScanDetail() {
   const s = q.data;
   const score = Math.round(Number(s.match_score));
   const missing = ((s.missing_keywords as any) ?? []) as { keyword: string; count: number }[];
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const catScores = useMemo(() => categoryScores(s.resume_text, s.jd_text), [s.resume_text, s.jd_text]);
 
   return (
     <PageShell>
