@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedResumesRouteImport } from './routes/_authenticated/resumes'
+import { Route as AuthenticatedResumeDiffRouteImport } from './routes/_authenticated/resume-diff'
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -48,6 +49,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedResumesRoute = AuthenticatedResumesRouteImport.update({
   id: '/resumes',
   path: '/resumes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedResumeDiffRoute = AuthenticatedResumeDiffRouteImport.update({
+  id: '/resume-diff',
+  path: '/resume-diff',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/insights': typeof AuthenticatedInsightsRoute
+  '/resume-diff': typeof AuthenticatedResumeDiffRoute
   '/resumes': typeof AuthenticatedResumesRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/insights': typeof AuthenticatedInsightsRoute
+  '/resume-diff': typeof AuthenticatedResumeDiffRoute
   '/resumes': typeof AuthenticatedResumesRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
+  '/_authenticated/resume-diff': typeof AuthenticatedResumeDiffRoute
   '/_authenticated/resumes': typeof AuthenticatedResumesRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
 }
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/history'
     | '/insights'
+    | '/resume-diff'
     | '/resumes'
     | '/history/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/history'
     | '/insights'
+    | '/resume-diff'
     | '/resumes'
     | '/history/$id'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
     | '/_authenticated/insights'
+    | '/_authenticated/resume-diff'
     | '/_authenticated/resumes'
     | '/_authenticated/history/$id'
   fileRoutesById: FileRoutesById
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResumesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/resume-diff': {
+      id: '/_authenticated/resume-diff'
+      path: '/resume-diff'
+      fullPath: '/resume-diff'
+      preLoaderRoute: typeof AuthenticatedResumeDiffRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/insights': {
       id: '/_authenticated/insights'
       path: '/insights'
@@ -260,6 +279,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
+  AuthenticatedResumeDiffRoute: typeof AuthenticatedResumeDiffRoute
   AuthenticatedResumesRoute: typeof AuthenticatedResumesRoute
 }
 
@@ -268,6 +288,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
+  AuthenticatedResumeDiffRoute: AuthenticatedResumeDiffRoute,
   AuthenticatedResumesRoute: AuthenticatedResumesRoute,
 }
 
@@ -284,13 +305,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
