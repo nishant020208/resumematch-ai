@@ -13,7 +13,7 @@ export function CommandPalette() {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggle } = useTheme();
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,12 +47,12 @@ export function CommandPalette() {
       { id: "ins", label: "Skill insights", icon: Sparkles, run: nav("/insights") },
     );
     base.push(
-      { id: "theme", label: `Toggle theme (currently ${theme})`, icon: theme === "dark" ? Sun : Moon, run: () => { setTheme(theme === "dark" ? "light" : "dark"); setOpen(false); } },
+      { id: "theme", label: `Toggle theme (currently ${theme})`, icon: theme === "dark" ? Sun : Moon, run: () => { toggle(); setOpen(false); } },
     );
     if (user) base.push({ id: "signout", label: "Sign out", icon: LogOut, run: async () => { setOpen(false); await supabase.auth.signOut(); router.navigate({ to: "/" }); } });
     else base.push({ id: "signin", label: "Sign in", icon: LogIn, run: nav("/auth") });
     return base;
-  }, [user, theme, router, setTheme]);
+  }, [user, theme, router, toggle]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
