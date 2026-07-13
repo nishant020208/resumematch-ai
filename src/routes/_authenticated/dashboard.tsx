@@ -6,6 +6,9 @@ import { TiltCard } from "@/components/tilt-card";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { ArrowRight, Play, History, Layers } from "lucide-react";
 import { format } from "date-fns";
+import { StreakBadge } from "@/components/streak-badge";
+import { AchievementsGrid } from "@/components/achievements";
+import { computeStreak, type AchievementCode } from "@/lib/achievements";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ResumeMatch AI" }] }),
@@ -25,10 +28,19 @@ function Dashboard() {
     queryKey: ["resumes-count"],
     queryFn: async () => (await supabase.from("resumes").select("id", { count: "exact", head: true })).count ?? 0,
   });
+  const achievementsQ = useQuery({
+    queryKey: ["achievements"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("achievements").select("code");
+      if (error) throw error;
+      return new Set((data ?? []).map(a => a.code as AchievementCode));
+    },
+  });
 
   const chartData = (scans.data ?? []).map(s => ({ date: format(new Date(s.created_at), "MMM d"), score: Number(s.match_score) }));
   const last = scans.data?.[scans.data.length - 1];
   const avg = scans.data?.length ? Math.round(scans.data.reduce((a, s) => a + Number(s.match_score), 0) / scans.data.length) : 0;
+  const streak = computeStreak((scans.data ?? []).map(s => s.created_at as string));
 
   return (
     <PageShell>
@@ -48,6 +60,13 @@ function Dashboard() {
           <Stat label="avg score" value={`${avg}%`} />
           <Stat label="latest" value={last ? `${Math.round(Number(last.match_score))}%` : "—"} />
         </div>
+
+        <div className="mt-6"><StreakBadge streak={streak} /></div>
+
+        <TiltCard className="mt-6">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">achievements</h3>
+          <div className="mt-4"><AchievementsGrid unlocked={achievementsQ.data ?? new Set()} /></div>
+        </TiltCard>
 
         <TiltCard className="mt-6 h-80">
           <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">score trend</h3>
