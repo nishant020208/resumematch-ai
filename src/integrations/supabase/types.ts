@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          code: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
