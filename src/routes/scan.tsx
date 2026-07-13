@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { PageShell } from "@/components/page-shell";
 import { TiltCard } from "@/components/tilt-card";
@@ -16,10 +16,15 @@ import { ResumeHeatmap } from "@/components/resume-heatmap";
 import { InterviewPanel } from "@/components/interview-panel";
 import { ShareCard } from "@/components/share-card";
 import { LineOptimizer } from "@/components/line-optimizer";
+import { KeywordCloud } from "@/components/keyword-cloud";
+import { AtsFixer } from "@/components/ats-fixer";
+import { MagneticButton } from "@/components/magnetic-button";
+import { Reveal } from "@/components/reveal";
+import { evaluateUnlocks, computeStreak } from "@/lib/achievements";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Play, Save, Sparkles, AlertTriangle, FileText, Link2, Loader2 } from "lucide-react";
+import { Play, Save, Sparkles, AlertTriangle, FileText, Link2, Loader2, Focus, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/scan")({
@@ -41,6 +46,15 @@ function ScanPage() {
   const [pickedResumeId, setPickedResumeId] = useState<string>("");
   const [jdUrl, setJdUrl] = useState("");
   const [fetching, setFetching] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const resumeRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (!focusMode) return;
+    const on = (e: KeyboardEvent) => { if (e.key === "Escape") setFocusMode(false); };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, [focusMode]);
 
   useEffect(() => onProgress(setProgress), []);
   useEffect(() => {
@@ -82,6 +96,7 @@ function ScanPage() {
       } else {
         localStorage.setItem(GUEST_KEY, String(guestCount + 1));
       }
+      if (user) void unlockAchievements(user.id, r.score, resumes.length);
     } catch (e: any) {
       toast.error(e?.message ?? "Analysis failed");
     } finally { setRunning(false); }
@@ -117,6 +132,33 @@ function ScanPage() {
     } finally { setFetching(false); }
   };
 
+  if (focusMode) {
+    return (
+      <div className="fixed inset-0 z-[80] flex flex-col bg-background p-4 sm:p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">focus mode · esc to exit</div>
+          <button onClick={() => setFocusMode(false)} className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-1 font-mono text-xs hover:text-foreground">
+            <X className="h-3 w-3" /> exit
+          </button>
+        </div>
+        <div className="grid flex-1 gap-3 md:grid-cols-2 min-h-0">
+          <textarea value={resume} onChange={e => setResume(e.target.value)}
+            placeholder="Resume…"
+            className="h-full w-full resize-none rounded-md border border-input bg-background p-4 font-mono text-sm leading-relaxed outline-none focus:border-[color:var(--acid)]/50" />
+          <textarea value={jd} onChange={e => setJd(e.target.value)}
+            placeholder="Job description…"
+            className="h-full w-full resize-none rounded-md border border-input bg-background p-4 font-mono text-sm leading-relaxed outline-none focus:border-[color:var(--acid)]/50" />
+        </div>
+        <div className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2">
+          <MagneticButton onClick={run} disabled={running}
+            className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-[color:var(--acid)] px-6 py-3 font-mono text-sm font-semibold text-[color:var(--acid-foreground)] shadow-xl acid-glow disabled:opacity-60">
+            <Play className="h-4 w-4" /> {running ? "analyzing…" : "analyze"}
+          </MagneticButton>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PageShell>
       <ErrorBoundary>
@@ -126,7 +168,12 @@ function ScanPage() {
               <h1 className="truncate font-mono text-2xl font-bold tracking-tight sm:text-3xl">/ scan</h1>
               <p className="mt-1 text-sm text-muted-foreground">Paste resume + JD. Everything runs in your browser.</p>
             </div>
-            <PrivacyBadge compact />
+            <div className="flex items-center gap-2">
+              <button onClick={() => setFocusMode(true)} className="hidden sm:inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-1.5 font-mono text-xs text-muted-foreground hover:text-foreground">
+                <Focus className="h-3 w-3" /> focus mode
+              </button>
+              <PrivacyBadge compact />
+            </div>
           </div>
 
           {!user && (
@@ -156,8 +203,12 @@ function ScanPage() {
               )}
               <textarea value={resume} onChange={e => setResume(e.target.value)}
                 placeholder="Paste resume text here…"
+                ref={resumeRef}
                 className="h-72 w-full resize-none rounded-md border border-input bg-background p-3 font-mono text-xs leading-relaxed outline-none focus:border-[color:var(--acid)]/50" />
               <div className="mt-2 font-mono text-[10px] text-muted-foreground">{resume.length} chars · {resume.trim().split(/\s+/).filter(Boolean).length} words</div>
+              {resume.trim().length > 50 && (
+                <div className="mt-3"><AtsFixer resume={resume} onApply={setResume} /></div>
+              )}
             </div>
 
             <div className="surface-card p-5">
@@ -192,10 +243,10 @@ function ScanPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button onClick={run} disabled={running}
+            <MagneticButton onClick={run} disabled={running}
               className="inline-flex items-center gap-2 rounded-md bg-[color:var(--acid)] px-5 py-2.5 font-mono text-sm font-semibold text-[color:var(--acid-foreground)] transition-all hover:-translate-y-0.5 acid-glow active:scale-95 disabled:opacity-60">
               <Play className="h-4 w-4" /> {running ? "analyzing…" : "analyze"}
-            </button>
+            </MagneticButton>
             {progress && progress.status !== "ready" && (
               <span className="font-mono text-xs text-muted-foreground">
                 loading model{progress.progress != null ? ` · ${Math.round(progress.progress)}%` : "…"}
@@ -210,14 +261,30 @@ function ScanPage() {
             </div>
           )}
 
-          {result && <Results r={result} resume={resume} />}
+          {result && <Results r={result} resume={resume} resumeRef={resumeRef} />}
         </div>
       </ErrorBoundary>
     </PageShell>
   );
 }
 
-function Results({ r, resume }: { r: AnalyzeResult; resume: string }) {
+async function unlockAchievements(userId: string, score: number, savedResumesCount: number) {
+  try {
+    const [{ data: scans }, { data: existing }] = await Promise.all([
+      supabase.from("scans").select("created_at").eq("user_id", userId),
+      supabase.from("achievements").select("code").eq("user_id", userId),
+    ]);
+    const total = scans?.length ?? 0;
+    const streak = computeStreak((scans ?? []).map(s => s.created_at as string));
+    const already = new Set((existing ?? []).map(e => e.code as string));
+    const unlocks = evaluateUnlocks({ totalScans: total, score, streak, savedResumesCount }, already);
+    if (unlocks.length === 0) return;
+    await supabase.from("achievements").insert(unlocks.map(code => ({ user_id: userId, code })));
+    for (const code of unlocks) toast.success(`🏆 Achievement unlocked: ${code.replace(/_/g, " ")}`);
+  } catch { /* silent */ }
+}
+
+function Results({ r, resume, resumeRef }: { r: AnalyzeResult; resume: string; resumeRef?: React.MutableRefObject<HTMLTextAreaElement | null> }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mt-10 space-y-6">
       <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
@@ -261,6 +328,14 @@ function Results({ r, resume }: { r: AnalyzeResult; resume: string }) {
           <div className="mt-4"><KeywordChips items={r.missing} variant="missing" /></div>
         </TiltCard>
       </div>
+
+      <Reveal>
+        <TiltCard>
+          <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">jd keyword cloud</h3>
+          <p className="mt-1 text-[11px] text-muted-foreground">Green = present in your resume · red = missing. Click a matched term to jump to it.</p>
+          <div className="mt-4"><KeywordCloud matched={r.matched} missing={r.missing} resume={resume} resumeElRef={resumeRef} /></div>
+        </TiltCard>
+      </Reveal>
 
       <TiltCard>
         <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">suggestions</h3>

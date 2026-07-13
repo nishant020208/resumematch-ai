@@ -15,6 +15,9 @@ import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { CustomCursor } from "@/components/custom-cursor";
+import { CursorGlow } from "@/components/cursor-glow";
+import { CommandPalette } from "@/components/command-palette";
 
 function NotFoundComponent() {
   return (
@@ -145,7 +148,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <CursorGlow />
+          <CustomCursor />
           <Outlet />
+          <CommandPalette />
           <Toaster />
         </AuthProvider>
       </ThemeProvider>

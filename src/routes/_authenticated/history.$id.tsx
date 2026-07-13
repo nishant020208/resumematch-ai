@@ -10,9 +10,11 @@ import { ShareCard } from "@/components/share-card";
 import { InterviewPanel } from "@/components/interview-panel";
 import { categoryScores } from "@/lib/keywords";
 import { useMemo } from "react";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ExportThemePicker } from "@/components/export-theme-picker";
+import { renderScanPdf, type ExportTheme } from "@/lib/export-themes";
 
 export const Route = createFileRoute("/_authenticated/history/$id")({
   head: () => ({ meta: [{ title: "Scan — ResumeMatch AI" }] }),
@@ -37,22 +39,11 @@ function ScanDetail() {
     [q.data],
   );
 
-  const exportPdf = async () => {
+  const exportPdf = async (theme: ExportTheme) => {
     if (!q.data) return;
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "pt", format: "letter" });
-    const s = q.data;
-    let y = 48;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.text("ResumeMatch AI — Scan Report", 48, y); y += 26;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(`Score: ${Math.round(Number(s.match_score))}/100   ·   ${format(new Date(s.created_at), "PPpp")}`, 48, y); y += 24;
-    if (s.resume_name) { doc.text(`Resume: ${s.resume_name}`, 48, y); y += 18; }
-    doc.setFont("helvetica", "bold"); doc.text("Matched keywords", 48, y); y += 14;
-    doc.setFont("helvetica", "normal"); doc.text(((s.matched_keywords as any[]) ?? []).map((m: any) => m.keyword).join(", ") || "—", 48, y, { maxWidth: 520 }); y += 40;
-    doc.setFont("helvetica", "bold"); doc.text("Missing keywords", 48, y); y += 14;
-    doc.setFont("helvetica", "normal"); doc.text(((s.missing_keywords as any[]) ?? []).map((m: any) => m.keyword).join(", ") || "—", 48, y, { maxWidth: 520 }); y += 40;
-    doc.setFont("helvetica", "bold"); doc.text("Suggestions", 48, y); y += 14;
-    doc.setFont("helvetica", "normal");
-    for (const g of ((s.suggestions as any[]) ?? [])) { const lines = doc.splitTextToSize("• " + g.text, 520); doc.text(lines, 48, y); y += lines.length * 12 + 4; }
+    renderScanPdf(doc, q.data as any, format(new Date(q.data.created_at), "PPpp"), theme);
     doc.save(`resumematch-${id.slice(0, 8)}.pdf`);
     toast.success("Report exported.");
   };
@@ -68,7 +59,7 @@ function ScanDetail() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link to="/history" className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> back</Link>
-          <button onClick={exportPdf} className="inline-flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs hover:text-foreground"><Download className="h-3 w-3" /> export pdf</button>
+          <ExportThemePicker score={score} onExport={exportPdf} />
         </div>
         <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
           <TiltCard className="grid place-items-center min-w-[260px]">
