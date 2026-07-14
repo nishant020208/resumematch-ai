@@ -186,15 +186,6 @@ Suggested content for the demo:
 
 ---
 
-## Screenshots
-
-**Screenshot 1 — Main scan interface (upload + paste screen)**
-> Capture: The `/scan` page with the two-panel layout (resume left, JD right), the privacy badge "on-device" in the top-right corner, and the green "analyze" button.
-
-```
-[ TODO: add screenshot — filename: screenshot-01-scan-input.png ]
-```
-
 ## License
 
 This project is licensed under the **MIT License** — OSI-compliant. ✅
