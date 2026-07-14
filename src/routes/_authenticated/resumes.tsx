@@ -7,8 +7,9 @@ import { TiltCard } from "@/components/tilt-card";
 import { FileDrop } from "@/components/file-drop";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, GitCompare } from "lucide-react";
 import { format } from "date-fns";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/resumes")({
   head: () => ({ meta: [{ title: "Saved resumes — ResumeMatch AI" }] }),
@@ -39,8 +40,17 @@ function Resumes() {
   return (
     <PageShell>
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <h1 className="font-mono text-2xl font-bold sm:text-3xl">/ resumes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Store 2–3 named versions (e.g. Backend-focused, Frontend-focused) and reuse them across scans.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="font-mono text-2xl font-bold sm:text-3xl">/ resumes</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Store 2–3 named versions (e.g. Backend-focused, Frontend-focused) and reuse them across scans.</p>
+          </div>
+          {(list.data?.length ?? 0) >= 2 && (
+            <Link to="/resume-diff" className="inline-flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-mono text-xs hover:text-foreground">
+              <GitCompare className="h-3 w-3 text-[color:var(--acid)]" /> compare versions
+            </Link>
+          )}
+        </div>
 
         <TiltCard className="mt-6">
           <div className="flex items-center justify-between gap-3">

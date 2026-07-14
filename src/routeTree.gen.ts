@@ -15,10 +15,12 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedResumesRouteImport } from './routes/_authenticated/resumes'
+import { Route as AuthenticatedResumeDiffRouteImport } from './routes/_authenticated/resume-diff'
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompareRouteImport } from './routes/_authenticated/compare'
+import { Route as AuthenticatedBatchRouteImport } from './routes/_authenticated/batch'
 import { Route as AuthenticatedHistoryIdRouteImport } from './routes/_authenticated/history.$id'
 
 const ScanRoute = ScanRouteImport.update({
@@ -50,6 +52,11 @@ const AuthenticatedResumesRoute = AuthenticatedResumesRouteImport.update({
   path: '/resumes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedResumeDiffRoute = AuthenticatedResumeDiffRouteImport.update({
+  id: '/resume-diff',
+  path: '/resume-diff',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
   id: '/insights',
   path: '/insights',
@@ -70,6 +77,11 @@ const AuthenticatedCompareRoute = AuthenticatedCompareRouteImport.update({
   path: '/compare',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBatchRoute = AuthenticatedBatchRouteImport.update({
+  id: '/batch',
+  path: '/batch',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHistoryIdRoute = AuthenticatedHistoryIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -81,10 +93,12 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scan': typeof ScanRoute
+  '/batch': typeof AuthenticatedBatchRoute
   '/compare': typeof AuthenticatedCompareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/insights': typeof AuthenticatedInsightsRoute
+  '/resume-diff': typeof AuthenticatedResumeDiffRoute
   '/resumes': typeof AuthenticatedResumesRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
 }
@@ -93,10 +107,12 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scan': typeof ScanRoute
+  '/batch': typeof AuthenticatedBatchRoute
   '/compare': typeof AuthenticatedCompareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/insights': typeof AuthenticatedInsightsRoute
+  '/resume-diff': typeof AuthenticatedResumeDiffRoute
   '/resumes': typeof AuthenticatedResumesRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
 }
@@ -107,10 +123,12 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scan': typeof ScanRoute
+  '/_authenticated/batch': typeof AuthenticatedBatchRoute
   '/_authenticated/compare': typeof AuthenticatedCompareRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
+  '/_authenticated/resume-diff': typeof AuthenticatedResumeDiffRoute
   '/_authenticated/resumes': typeof AuthenticatedResumesRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
 }
@@ -121,10 +139,12 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/scan'
+    | '/batch'
     | '/compare'
     | '/dashboard'
     | '/history'
     | '/insights'
+    | '/resume-diff'
     | '/resumes'
     | '/history/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -133,10 +153,12 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/scan'
+    | '/batch'
     | '/compare'
     | '/dashboard'
     | '/history'
     | '/insights'
+    | '/resume-diff'
     | '/resumes'
     | '/history/$id'
   id:
@@ -146,10 +168,12 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/scan'
+    | '/_authenticated/batch'
     | '/_authenticated/compare'
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
     | '/_authenticated/insights'
+    | '/_authenticated/resume-diff'
     | '/_authenticated/resumes'
     | '/_authenticated/history/$id'
   fileRoutesById: FileRoutesById
@@ -206,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResumesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/resume-diff': {
+      id: '/_authenticated/resume-diff'
+      path: '/resume-diff'
+      fullPath: '/resume-diff'
+      preLoaderRoute: typeof AuthenticatedResumeDiffRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/insights': {
       id: '/_authenticated/insights'
       path: '/insights'
@@ -234,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCompareRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/batch': {
+      id: '/_authenticated/batch'
+      path: '/batch'
+      fullPath: '/batch'
+      preLoaderRoute: typeof AuthenticatedBatchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/history/$id': {
       id: '/_authenticated/history/$id'
       path: '/$id'
@@ -256,18 +294,22 @@ const AuthenticatedHistoryRouteWithChildren =
   AuthenticatedHistoryRoute._addFileChildren(AuthenticatedHistoryRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBatchRoute: typeof AuthenticatedBatchRoute
   AuthenticatedCompareRoute: typeof AuthenticatedCompareRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
+  AuthenticatedResumeDiffRoute: typeof AuthenticatedResumeDiffRoute
   AuthenticatedResumesRoute: typeof AuthenticatedResumesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBatchRoute: AuthenticatedBatchRoute,
   AuthenticatedCompareRoute: AuthenticatedCompareRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
+  AuthenticatedResumeDiffRoute: AuthenticatedResumeDiffRoute,
   AuthenticatedResumesRoute: AuthenticatedResumesRoute,
 }
 

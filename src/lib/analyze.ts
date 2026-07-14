@@ -1,10 +1,11 @@
 import { embed, cosine } from "./embed-client";
-import { extractJdKeywords, keywordPresent } from "./keywords";
+import { extractJdKeywords, keywordPresent, categoryScores, type CategoryScore } from "./keywords";
 import { splitSections } from "./sections";
 import { checkAts, type AtsIssue } from "./ats";
 
 export type Suggestion = { severity: "high" | "med" | "low"; text: string };
 export type SectionScore = { section: string; score: number };
+export type LineScore = { text: string; score: number };
 export type AnalyzeResult = {
   score: number;
   matched: { keyword: string; count: number }[];
@@ -12,19 +13,34 @@ export type AnalyzeResult = {
   sectionScores: SectionScore[];
   suggestions: Suggestion[];
   atsIssues: AtsIssue[];
+  categoryScores: CategoryScore[];
+  lineScores: LineScore[];
+  jdVector: number[];
 };
 
 export async function analyze(resume: string, jd: string): Promise<AnalyzeResult> {
   const sections = splitSections(resume);
   const sectionEntries = Object.entries(sections);
-  const inputs = [resume, jd, ...sectionEntries.map(([, v]) => v)];
+
+  // Line-level scoring: split resume into meaningful lines (cap for cost)
+  const rawLines = resume.split(/\r?\n/).map(l => l.trim()).filter(l => l.length >= 20);
+  const lines = rawLines.slice(0, 120);
+
+  const inputs = [resume, jd, ...sectionEntries.map(([, v]) => v), ...lines];
   const vectors = await embed(inputs);
   const overall = Math.max(0, Math.min(1, (cosine(vectors[0], vectors[1]) + 1) / 2));
   const score = Math.round(overall * 100);
 
+  const jdVec = vectors[1];
   const sectionScores: SectionScore[] = sectionEntries.map(([name], i) => ({
     section: name,
-    score: Math.round(Math.max(0, Math.min(1, (cosine(vectors[2 + i], vectors[1]) + 1) / 2)) * 100),
+    score: Math.round(Math.max(0, Math.min(1, (cosine(vectors[2 + i], jdVec) + 1) / 2)) * 100),
+  }));
+
+  const lineStart = 2 + sectionEntries.length;
+  const lineScores: LineScore[] = lines.map((text, i) => ({
+    text,
+    score: Math.round(Math.max(0, Math.min(1, (cosine(vectors[lineStart + i], jdVec) + 1) / 2)) * 100),
   }));
 
   const jdKeywords = extractJdKeywords(jd);
@@ -48,5 +64,11 @@ export async function analyze(resume: string, jd: string): Promise<AnalyzeResult
   }
   if (score >= 80) suggestions.push({ severity: "low", text: "Strong overall alignment. Tailor the top 3 bullets to mirror the JD phrasing." });
 
-  return { score, matched, missing, sectionScores, suggestions, atsIssues: checkAts(resume) };
+  return {
+    score, matched, missing, sectionScores, suggestions,
+    atsIssues: checkAts(resume),
+    categoryScores: categoryScores(resume, jd),
+    lineScores,
+    jdVector: jdVec,
+  };
 }
