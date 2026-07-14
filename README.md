@@ -1,306 +1,247 @@
-# 🎯 Resonate
+# ResumeMatch AI
 
-<p align="center">
-  <strong>Your resume never leaves your browser — the AI runs on your device, not in the cloud.</strong>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Privacy-First-000000?style=for-the-badge&logo=shield&logoColor=white" alt="Privacy First" />
-  <img src="https://img.shields.io/badge/On--Device_AI-Transformers.js-7C3AED?style=for-the-badge&logo=huggingface&logoColor=white" alt="On-Device AI" />
-  <img src="https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
-  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" />
-  <img src="https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-</p>
+**Match your resume to any job description — locally, in your browser, with zero data upload.**
 
 ---
 
-## 📖 Table of Contents
-1. [Introduction](#-introduction)
-2. [How It Works (Privacy & AI Architecture)](#-how-it-works-privacy--ai-architecture)
-3. [Key Features](#-key-features)
-4. [Tech Stack](#-tech-stack)
-5. [Database Schema](#-database-schema)
-6. [Project Structure](#-project-structure)
-7. [Getting Started & Local Setup](#-getting-started--local-setup)
-8. [Frequently Asked Questions (FAQ)](#-frequently-asked-questions-faq)
-9. [Privacy & Security Commitment](#-privacy--security-commitment)
+> 🔒 **Why On-Device?**
+> Your resume is some of the most sensitive text you own — full work history, contact details, career trajectory. ResumeMatch AI runs its entire AI pipeline inside your browser tab using a Web Worker. The text you paste never leaves your machine, is never sent to a server, and is never logged. The model runs on your CPU. You own the inference.
 
 ---
 
-## 🌟 Introduction
+## Short Description
 
-**Resonate** is a privacy-first, serverless-AI resume-to-job-description matcher designed to put the user back in control of their data. 
-
-Applying for jobs shouldn't mean sharing your professional history and contact details with third-party LLMs or remote APIs. Resonate solves this by loading a compact machine learning model directly in your browser. Paste your resume and a target job description, and Resonate immediately computes their semantic alignment, runs a keyword gap analysis, detects ATS formatting issues, and suggests actionable resume updates — **entirely offline, with 0% data sent to external AI servers**.
-
-Supabase is only leveraged for non-AI workflows: secure user authentication, managing different versions of your resumes, and keeping track of your match-score history to visualize your profile optimizations over time.
+ResumeMatch AI is a browser-native tool that scores how well your resume matches a job description using a real sentence-embedding model running entirely on-device. It surfaces matched and missing keywords, breaks the score down by resume section, flags ATS readability issues, and generates targeted rewrite suggestions — all without sending your resume to any server.
 
 ---
 
-## 🧠 How It Works (Privacy & AI Architecture)
+## Problem Statement
 
-Resonate uses [Transformers.js](https://huggingface.co/docs/transformers.js) to run the **`all-MiniLM-L6-v2`** sentence-transformer model locally on your machine. 
+Job seekers — particularly software engineers and technical candidates — paste their resumes into cloud-based ATS checkers, resume scoring tools, and AI writing assistants without realising their full work history, personal contact info, and career details are being uploaded, stored, and potentially used for training. Existing tools also give opaque scores with no actionable detail: "your resume is 62% matched" with no breakdown of why or what to fix.
 
-### 🔄 The Embedding and Scoring Pipeline
-1. **Background Model Fetching**: The first time you initiate a scan, the ~90MB model is fetched from Hugging Face's CDN and cached locally in your browser's **IndexedDB** database. Subsequent scans load instantly from the local cache.
-2. **Off-Thread Processing**: To prevent UI freezes and maintain a responsive 60fps experience, embedding generation is completely offloaded to a browser **Web Worker** (`embed.worker.ts`).
-3. **High-Dimensional Vector Representation**: Your resume and job description are converted into 384-dimensional dense vectors representing their semantic meaning.
-4. **Cosine Similarity Computation**: The client calculates the cosine similarity between the resume vector and the job description vector to generate an overall match score from `0` to `100`.
-5. **Section Grading**: The resume is parsed into sections (Skills, Experience, Projects), and each is separately compared to the job description vector to isolate which sections need the most alignment work.
-
-### 📐 Local Architecture Workflow
-
-```mermaid
-flowchart TD
-    %% Styling
-    classDef client fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
-    classDef worker fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff;
-    classDef localcache fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff;
-    classDef db fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
-
-    subgraph ClientBrowser ["Client Browser Sandbox (Safe Context)"]
-        UI["React Frontend UI"]
-        EmbedClient["Embed Client (lib/embed-client.ts)"]
-        Parser["Document Parser (lib/text-extract.ts)"]
-        Analyzer["Local Analyzer (lib/analyze.ts)"]
-    end
-
-    subgraph OffThread ["Background Web Worker Thread"]
-        Worker["Web Worker (embed.worker.ts)"]
-        Model["Transformers.js (all-MiniLM-L6-v2)"]
-    end
-
-    subgraph LocalStorage ["Local Browser Cache"]
-        Cache["IndexedDB Cache"]
-    end
-
-    subgraph Backend ["Supabase Cloud Platform (Non-AI Storage)"]
-        Auth["Supabase Auth"]
-        Database[("PostgreSQL Database")]
-    end
-
-    %% Flow lines
-    UI -->|1. Upload Resume & Job Desc| Parser
-    Parser -->|2. Raw Text| EmbedClient
-    EmbedClient -->|3. Post Message| Worker
-    Worker -->|4. Load Model| Model
-    Model <-->|5. Cache / Retrieve| Cache
-    Worker -->|6. Return Embeddings| EmbedClient
-    EmbedClient -->|7. Multi-vector Output| Analyzer
-    Analyzer -->|8. Run Cosine Similarity & Keyword Extraction| UI
-    
-    UI <-->|Sync Session| Auth
-    UI -->|Save Profile, Resumes & Scan Metadata| Database
-    Database <-->|Fetch History| UI
-
-    class UI,EmbedClient,Parser,Analyzer client;
-    class Worker,Model worker;
-    class Cache localcache;
-    class Auth,Database db;
-```
+The target user is a developer or technically-literate job seeker who wants honest, granular feedback without surrendering their data to a third party.
 
 ---
 
-## ✨ Key Features
+## Solution Overview
 
-* 🔒 **100% Client-Side AI**: Your document contents never travel to OpenAI, Anthropic, or any server. Everything is processed locally in the browser sandboxed memory.
-* 🤖 **MiniLM Semantic Embeddings**: Utilizes the battle-tested `all-MiniLM-L6-v2` model to capture context and meaning, matching concepts even when exact phrasing differs.
-* ⚡ **Off-Main-Thread Processing**: Leverages Web Workers to perform heavy vector math without blocking user interactions.
-* 🔍 **Keyword Gap Spotter**: Extracts the most critical skills and terms from the job description and performs a local crosscheck to reveal what's missing.
-* 📊 **Multi-Version Tracking**: Save multiple resumes (e.g., *Frontend-focused*, *Management-focused*) to Supabase and compare their fit scores against the same job listing.
-* 📈 **Improvement Analytics**: Track your progress historically. Witness your match score climb as you refine your bullet points.
-* 📄 **Local ATS Checks**: Analyzes document structure to identify issues like missing sections, poor phone number formats, or generic file headers before you submit them.
+ResumeMatch AI puts the embedding model directly in the browser. The user pastes a resume and a job description; a Web Worker loads `all-MiniLM-L6-v2` via Transformers.js, computes sentence embeddings for both documents and for each detected resume section, and calculates cosine similarity scores locally. On top of the semantic match score, a curated skill-bank keyword matcher identifies exactly which JD terms are present or missing from the resume. The result is a numeric match score (0–100), per-section scores, matched/missing keyword chips, prioritised rewrite suggestions, and an ATS readability audit — all rendered instantly in the browser with no round-trip to a server.
+
+Authenticated users (optional, via Supabase) can save named resume versions, build a scan history, compare up to three scans side-by-side, and view aggregated skill-gap insights across all their past scans.
 
 ---
 
-## 🛠️ Tech Stack
+## On-Device AI Usage
 
-| Layer | Technology | Details |
-| :--- | :--- | :--- |
-| **Core Framework** | React 19 + TypeScript | High performance, type-safe frontend |
-| **Routing & Server**| TanStack Start | Modern file-based routing and page shell transitions |
-| **Styling** | Tailwind CSS | Sleek, glassmorphism-friendly, dark-mode design |
-| **Build System** | Vite 8 + Bun | Hyper-fast local bundling and dependency management |
-| **On-Device AI** | Transformers.js (`@xenova/transformers`) | Porting PyTorch/ONNX models directly to web environments |
-| **Model** | `Xenova/all-MiniLM-L6-v2` | Dense vector encoder (384 Dimensions, ~90MB ONNX format) |
-| **Data & Auth** | Supabase | Auth, PostgreSQL database, row-level security (RLS) policies |
+### What runs locally
 
----
+| Feature | Detail |
+|---|---|
+| **Resume-to-JD semantic matching** | Cosine similarity of full-document embeddings computed in-browser |
+| **Per-section semantic scoring** | Individual embeddings computed for Skills, Experience, Projects, Education, Summary, Certifications sections |
+| **Keyword gap analysis** | Curated 130+ skill-bank + frequency-based extraction — pure JS, no network |
+| **ATS readability checks** | Regex heuristics for word count, contact info, decorative characters — pure JS, no network |
+| **Rewrite suggestions** | Generated from local embedding scores and keyword tallies — no LLM API call |
 
-## 🗄️ Database Schema
+### Model
 
-Supabase manages a standard PostgreSQL database containing three main user-related tables. All database actions require authentication, and custom Row-Level Security (RLS) rules restrict data access exclusively to the creator.
+| Field | Value |
+|---|---|
+| **Model name** | `all-MiniLM-L6-v2` |
+| **Checkpoint identifier** | `Xenova/all-MiniLM-L6-v2` |
+| **Source** | [Hugging Face Hub](https://huggingface.co/Xenova/all-MiniLM-L6-v2) — ONNX-converted for browser use |
+| **Approximate size** | ~30 MB (ONNX weights, cached in browser IndexedDB after first load) |
+| **Original license** | Apache 2.0 |
+| **Runtime** | `@xenova/transformers` (Transformers.js) via WASM on a dedicated Web Worker, off the main thread |
+| **Execution environment** | Any modern desktop or mobile browser (Chrome, Firefox, Safari, Edge); no GPU required |
 
-```
-                  ┌──────────────────────┐
-                  │   auth.users (Core)  │
-                  └──────────┬───────────┘
-                             │
-                             ▼ (1-to-1)
-                  ┌──────────────────────┐
-                  │    public.profiles   │
-                  └──────────┬───────────┘
-                             │
-            ┌────────────────┴────────────────┐
-            │ (1-to-many)                     │ (1-to-many)
-            ▼                                 ▼
-┌──────────────────────┐            ┌──────────────────────┐
-│    public.resumes    │◄───────────┤     public.scans     │
-└──────────────────────┘ (1-to-many)└──────────────────────┘
-```
+### Data privacy guarantee
 
-### 1. `public.profiles`
-Stores user profile information. Automatically populated via database triggers on user signup.
-* `id` (`UUID`, Primary Key) -> References `auth.users.id`
-* `display_name` (`TEXT`)
-* `created_at` (`TIMESTAMPTZ`)
+**No core AI input data leaves the user's device.** The resume text, job description text, computed embedding vectors, match scores, keyword lists, and suggestions are all generated locally. The Web Worker (`src/workers/embed.worker.ts`) communicates only with the browser's own thread via `postMessage`.
 
-### 2. `public.resumes`
-Stores saved resumes.
-* `id` (`UUID`, Primary Key)
-* `user_id` (`UUID`) -> References `auth.users.id`
-* `name` (`TEXT`) -> Friendly label for this version (e.g. `Backend Senior v3`)
-* `content` (`TEXT`) -> Plain text resume contents
-* `created_at` / `updated_at` (`TIMESTAMPTZ`)
+### Cloud services used (non-core only)
 
-### 3. `public.scans`
-Stores matching results and metadata metrics. **Notice: This stores the text and final match analytics, but no external AI calls are ever made.**
-* `id` (`UUID`, Primary Key)
-* `user_id` (`UUID`) -> References `auth.users.id`
-* `resume_id` (`UUID`, Nullable) -> References `public.resumes.id`
-* `resume_name` (`TEXT`)
-* `resume_text` (`TEXT`)
-* `jd_text` (`TEXT`)
-* `jd_title` (`TEXT`)
-* `match_score` (`NUMERIC`) -> The final cosine similarity score (scaled to 0-100)
-* `matched_keywords` (`JSONB`) -> Array of matching skills/terms
-* `missing_keywords` (`JSONB`) -> Array of missing skills/terms
-* `section_scores` (`JSONB`) -> Key-value pairs of section scores (Skills, Experience, Projects)
-* `suggestions` (`JSONB`) -> List of actionable improvement recommendations
-* `ats_issues` (`JSONB`) -> ATS formatting issues detected locally
-* `created_at` (`TIMESTAMPTZ`)
+| Service | Purpose | AI inference? |
+|---|---|---|
+| **Supabase** | Optional user auth (email/password), persistent storage of saved resumes and scan history | No |
+| **Lovable / Cloudflare (hosting)** | Static site hosting and SSR edge delivery | No |
+
+Cloud services are strictly limited to auth, persistence, and delivery. The core AI inference — embedding, scoring, keyword analysis — never touches a cloud API.
 
 ---
 
-## 📂 Project Structure
+## Tech Stack
 
-```bash
-resumematch-ai/
-├── supabase/                  # Supabase migrations and configurations
-│   ├── config.toml
-│   └── migrations/            # Database schema migration files
-├── src/
-│   ├── components/            # Reusable UI components
-│   │   ├── ui/                # Radix UI and raw layout component primitives
-│   │   ├── file-drop.tsx      # Local PDF/text file dropzone handler
-│   │   ├── score-ring.tsx     # Visual similarity match score gauge
-│   │   ├── keyword-chips.tsx  # Display chip grid for matched vs missing keywords
-│   │   └── privacy-badge.tsx  # Green status light signaling on-device operation
-│   ├── hooks/                 # Custom React hooks
-│   ├── integrations/          # Supabase client setup
-│   ├── lib/                   # Utility helpers and analysis logic
-│   │   ├── analyze.ts         # Main client analyzer and scoring logic
-│   │   ├── embed-client.ts    # Web Worker messenger & cosine similarity math
-│   │   ├── keywords.ts        # Keyword extraction engine
-│   │   ├── ats.ts             # Rule-based local ATS checker
-│   │   └── text-extract.ts    # Extracts text content from uploads
-│   ├── routes/                # TanStack Start File-based routes
-│   │   ├── _authenticated/    # Authentication-protected subpages
-│   │   │   ├── compare.tsx    # Resume version comparison
-│   │   │   ├── dashboard.tsx  # History logs, charts, and progress overview
-│   │   │   ├── resumes.tsx    # Saved resume version management
-│   │   │   └── history.tsx    # Scrollable past scan lists
-│   │   ├── auth.tsx           # Signup and Sign-in portal
-│   │   ├── index.tsx          # Landing overview and hero sections
-│   │   └── scan.tsx           # Interactive analyzer interface
-│   ├── workers/
-│   │   └── embed.worker.ts    # Web Worker running the local AI model
-│   ├── styles.css             # Base CSS and theme configurations
-│   ├── main.tsx
-│   └── routeTree.gen.ts       # Autogenerated TanStack router paths
-├── package.json
-└── tsconfig.json
-```
+| Category | Tool / Library |
+|---|---|
+| **Framework** | TanStack Start (React 19, file-based routing, SSR) |
+| **Language** | TypeScript 5.8 |
+| **AI runtime** | `@xenova/transformers` (Transformers.js, WASM Web Worker) |
+| **AI model** | `Xenova/all-MiniLM-L6-v2` (sentence embeddings, ONNX) |
+| **File parsing** | `mammoth` (DOCX), `pdfjs-dist` (PDF), native `File.text()` (TXT) — all client-side |
+| **Styling** | Tailwind CSS v4 |
+| **UI components** | Radix UI primitives + shadcn/ui |
+| **Animations** | Framer Motion |
+| **Charts** | Recharts |
+| **Auth & DB** | Supabase (PostgreSQL, Row-Level Security, email auth) |
+| **State / data fetching** | TanStack Query v5 |
+| **Build tool** | Vite 8 + Bun |
+| **Deployment** | Lovable Cloud (Cloudflare edge, Nitro SSR) |
+| **Package manager** | Bun |
 
 ---
 
-## 🚀 Getting Started & Local Setup
+## Setup Instructions
 
-Resonate is built to be extremely lightweight to run locally. Since it uses **Bun**, you can get it up and running in seconds.
-
-### Prerequisites
-Make sure you have [Bun](https://bun.sh/) (recommended) or [Node.js](https://nodejs.org/) installed.
+> Assumes Node.js 18+ or Bun 1.x installed. Bun is preferred (lockfile is `bun.lock`).
 
 ### 1. Clone the repository
+
 ```bash
-git clone https://github.com/yourusername/resumematch-ai.git
+git clone https://github.com/<your-username>/resumematch-ai.git
 cd resumematch-ai
 ```
 
 ### 2. Install dependencies
+
 ```bash
 bun install
-# Or if using npm:
-# npm install
 ```
 
-### 3. Setup environment variables
-Create a `.env` file in the root directory. You can copy the template from `.env.example`:
-```bash
-cp .env.example .env
-```
-Fill in your Supabase credentials:
+> If you prefer npm: `npm install` also works, but use `bun` for consistency with the lockfile.
+
+### 3. Configure environment variables
+
+Create a `.env` file in the repo root. You need a [Supabase](https://supabase.com) project for auth and history features. The core scan functionality (AI matching) works without Supabase — it just won't persist results.
+
 ```env
-VITE_SUPABASE_URL="https://your-project.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="your-anon-publishable-key"
+VITE_SUPABASE_URL=https://<your-project-id>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
+SUPABASE_URL=https://<your-project-id>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
 ```
 
-### 4. Start the local server
-Run the development environment locally:
+> The `.env` file is gitignored. Never commit real keys.
+
+**Optional: run Supabase migrations**
+
+To enable scan history and resume saving, apply the schema to your Supabase project via the SQL editor or CLI:
+
+```bash
+npx supabase db push
+```
+
+Or apply the SQL files in `supabase/migrations/` manually via the Supabase dashboard.
+
+### 4. Start the development server
+
 ```bash
 bun run dev
-# Or if using npm:
-# npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) (or the port specified in terminal) in your browser.
+### 5. Open the app
 
-### 5. Build for production
-To compile the production assets:
-```bash
-bun run build
-# Or if using npm:
-# npm run build
+Navigate to **http://localhost:3000** in your browser.
+
+The first time you run a scan, the browser will download and cache the `all-MiniLM-L6-v2` ONNX model (~30 MB). Subsequent scans load the cached model instantly from IndexedDB.
+
+---
+
+## Usage Instructions
+
+### Guest mode (no account required)
+
+1. **Open the app** at the local or deployed URL.
+2. **Navigate to `/scan`** (or click **"run a scan"** on the landing page).
+3. **Paste your resume text** into the left panel. Alternatively, click the file drop button to upload a `.pdf`, `.docx`, or `.txt` file — text is extracted client-side.
+4. **Paste the job description** into the right panel. File upload works here too.
+5. **Click "analyze"**. Watch the model loading progress bar if this is your first scan (model loads once, then caches). Analysis starts automatically when the model is ready.
+6. **Read your results**:
+   - **Score ring** — overall semantic match score (0–100).
+   - **Section breakdown** — per-section scores (Skills, Experience, Projects, Education, etc.) with animated progress bars.
+   - **Matched keywords** — terms from the JD found in your resume, shown as green chips.
+   - **Missing keywords** — JD terms absent from your resume, shown as red chips (prioritise these).
+   - **Suggestions** — severity-ranked, specific rewrite hints (e.g. "Add 'Kubernetes' — mentioned 3x in the JD").
+   - **ATS readability warnings** — flags for missing contact info, decorative characters, and word-count issues.
+
+### Signed-in mode (optional)
+
+7. **Create an account** at `/auth` (email + password, via Supabase).
+8. **Save resume versions** — name them (e.g. "Backend-focused", "Fullstack") and reuse them across scans without re-pasting.
+9. **View scan history** at `/history` — search past scans by JD text or resume name, click into any scan to see full result detail.
+10. **Compare scans** at `/compare` — select 2–3 past scans to view side-by-side score rings and keyword lists.
+11. **View skill insights** at `/insights` — bar charts of your most-missed and most-matched skills aggregated across all past scans. Use this to prioritise what to learn or add to your resume.
+
+---
+
+## Demo Video
+
+**[Demo Video: add link here — 2 to 5 minutes, hosted on YouTube/Drive/Loom/Vimeo, publicly accessible without permission]**
+
+Suggested content for the demo:
+- Open the app cold and show the model loading (Web Worker progress bar)
+- Paste a sample resume and job description, run a scan, narrate the results panels
+- Show the scan history and skill insights pages for a signed-in user
+- Briefly open DevTools Network tab to demonstrate zero resume-text requests leaving the browser
+
+---
+
+## Screenshots
+
+**Screenshot 1 — Main scan interface (upload + paste screen)**
+> Capture: The `/scan` page with the two-panel layout (resume left, JD right), the privacy badge "on-device" in the top-right corner, and the green "analyze" button.
+
+```
+[ TODO: add screenshot — filename: screenshot-01-scan-input.png ]
+```
+
+**Screenshot 2 — AI processing / model loading state**
+> Capture: The loading state immediately after clicking "analyze" — showing the progress indicator "loading model · 47% · model.onnx" and skeleton placeholder cards below the button.
+
+```
+[ TODO: add screenshot — filename: screenshot-02-loading-state.png ]
+```
+
+**Screenshot 3 — Results output screen**
+> Capture: Full results view with the score ring (e.g. 74/100), section breakdown bars (Skills 81%, Experience 66%, Projects 48%), matched keywords (green chips), missing keywords (red chips), and at least one suggestion card with coloured severity dot.
+
+```
+[ TODO: add screenshot — filename: screenshot-03-results-output.png ]
 ```
 
 ---
 
-## ❓ Frequently Asked Questions (FAQ)
+## License
 
-#### Q: How does the AI run in the browser without an API key?
-**A:** Thanks to WebAssembly and ONNX Runtime Web, modern browsers are capable of running neural networks. Transformers.js loads the ONNX version of `all-MiniLM-L6-v2`, compiles it to run inside a sandboxed Web Worker, and processes your text inputs using the client device's CPU/GPU.
+This project is licensed under the **MIT License** — OSI-compliant. ✅
 
-#### Q: Does it work offline?
-**A:** Yes! Once the model has been downloaded the first time (approx. 90MB) and cached in your browser's IndexedDB, you can run scans, calculate match scores, and do gap analyses entirely without an active internet connection.
-
-#### Q: Does my resume text get saved to Supabase?
-**A:** Only if you are logged in and choose to save a resume version or record a scan result to your dashboard history. If you use the app in guest/anonymous mode, everything is processed solely in transient memory and deleted when you close the tab.
-
-#### Q: What is the `all-MiniLM-L6-v2` model?
-**A:** It is a highly optimized sentence-transformers model that maps sentences and paragraphs to a 384-dimensional dense vector space. It is specifically pre-trained for tasks like semantic search, clustering, and sentence similarity matching.
+A `LICENSE` file exists at the repo root.
 
 ---
 
-## 🛡️ Privacy & Security Commitment
+## Known Limitations & Future Scope
 
-Your professional data is highly personal. Resonate guarantees:
-1. **Zero External AI Servers**: No API calls are made to OpenAI, Anthropic, Google, or any LLM provider.
-2. **Local Sandboxing**: All text extraction, embedding, vector matching, and ATS checks are performed inside your browser sandbox.
-3. **Transparent Data Syncing**: Database operations (through Supabase) only sync data to your personal account database. You retain full ownership, with the ability to delete your data or your account at any time.
+- **Cold-start model download.** The `all-MiniLM-L6-v2` ONNX weights are ~30 MB and are fetched from the Hugging Face CDN on first use. After the initial download the browser caches the model in IndexedDB and all subsequent scans are instant. First-load latency on slow connections can be noticeable. [TODO: measure and add local inference time after model is warm]
+- **Small model accuracy tradeoffs.** MiniLM-L6-v2 is a 22M-parameter sentence encoder optimised for speed and browser compatibility. It captures semantic similarity well but can miss nuanced domain-specific jargon or conflate similar-sounding but functionally different technologies (e.g. Kafka vs. RabbitMQ). A larger model (e.g. `all-mpnet-base-v2`, ~420 MB) would improve accuracy but is impractical in a browser context.
+- **Text-only input.** PDF and DOCX files are extracted as plain text client-side. Visually rich, multi-column, or table-heavy resume layouts may produce garbled extraction, leading to misleading scores. Users should verify the extracted text in the paste panel before running a scan.
+- **Keyword bank is curated, not learned.** The 130+ term skill bank (`src/lib/keywords.ts`) was hand-curated for software and tech roles. It does not cover all industries, seniority levels, or international job markets. Highly specialised roles (biotech, finance, law) will have lower keyword recall.
+- **No fully offline persistence.** Running the app without Supabase credentials disables auth, scan history, resume saving, insights, and compare. A localStorage-only fallback persistence layer for offline use is a clear future improvement.
 
 ---
 
-<p align="center">
-  Made with 🔒 for private, secure, and fast resume matching.
-</p>
+## Acknowledgements / Attribution
+
+| Resource | Role | License |
+|---|---|---|
+| [`Xenova/all-MiniLM-L6-v2`](https://huggingface.co/Xenova/all-MiniLM-L6-v2) | ONNX-converted sentence embedding model used for all semantic matching | Apache 2.0 |
+| [sentence-transformers / `all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | Original model (fine-tuned MiniLM) by the sentence-transformers team | Apache 2.0 |
+| [`@xenova/transformers`](https://github.com/xenova/transformers.js) | Transformers.js — runs Hugging Face ONNX models in the browser via WASM | Apache 2.0 |
+| [ONNX Runtime Web](https://github.com/microsoft/onnxruntime) | WASM inference backend used internally by Transformers.js | MIT |
+| [Supabase](https://supabase.com) | Auth and PostgreSQL database backend (optional, non-core) | Apache 2.0 (client SDK) |
+| [TanStack](https://tanstack.com) | Router, Start SSR framework, and Query | MIT |
+| [Radix UI](https://www.radix-ui.com) | Accessible headless UI primitives | MIT |
+| [Tailwind CSS](https://tailwindcss.com) | Utility-first CSS framework | MIT |
+| [Framer Motion](https://www.framer.com/motion/) | Animation library | MIT |
+| [Recharts](https://recharts.org) | Chart library for score trend and skill insights | MIT |
+| [Lucide React](https://lucide.dev) | Icon set | ISC |
+| [shadcn/ui](https://ui.shadcn.com) | Component recipes built on Radix UI | MIT |
