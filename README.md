@@ -195,22 +195,6 @@ Suggested content for the demo:
 [ TODO: add screenshot — filename: screenshot-01-scan-input.png ]
 ```
 
-**Screenshot 2 — AI processing / model loading state**
-> Capture: The loading state immediately after clicking "analyze" — showing the progress indicator "loading model · 47% · model.onnx" and skeleton placeholder cards below the button.
-
-```
-[ TODO: add screenshot — filename: screenshot-02-loading-state.png ]
-```
-
-**Screenshot 3 — Results output screen**
-> Capture: Full results view with the score ring (e.g. 74/100), section breakdown bars (Skills 81%, Experience 66%, Projects 48%), matched keywords (green chips), missing keywords (red chips), and at least one suggestion card with coloured severity dot.
-
-```
-[ TODO: add screenshot — filename: screenshot-03-results-output.png ]
-```
-
----
-
 ## License
 
 This project is licensed under the **MIT License** — OSI-compliant. ✅
