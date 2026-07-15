@@ -6,6 +6,7 @@ import { PageShell } from "@/components/page-shell";
 import { Ambient } from "@/components/ambient";
 import { toast } from "sonner";
 import { Terminal } from "lucide-react";
+import { MagneticButton } from "@/components/magnetic-button";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — ResumeMatch AI" }, { name: "description", content: "Sign in to save scans, resumes, and compare over time." }] }),
@@ -71,9 +72,9 @@ function AuthPage() {
                     className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm outline-none focus:border-[color:var(--acid)] focus:ring-1 focus:ring-[color:var(--acid)]" />
                 </div>
               )}
-              <button disabled={busy} className="w-full rounded-md bg-[color:var(--acid)] px-4 py-2.5 font-mono text-sm font-semibold text-[color:var(--acid-foreground)] transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60">
+              <MagneticButton disabled={busy} className="w-full rounded-md bg-[color:var(--acid)] px-4 py-2.5 font-mono text-sm font-semibold text-[color:var(--acid-foreground)] hover:-translate-y-0.5 active:scale-95 disabled:opacity-60">
                 {busy ? "working…" : mode === "signin" ? "sign in" : mode === "signup" ? "create account" : "send reset link"}
-              </button>
+              </MagneticButton>
             </form>
             <div className="mt-4 flex flex-wrap justify-between gap-2 font-mono text-xs text-muted-foreground">
               {mode !== "signin" && <button onClick={() => setMode("signin")} className="hover:text-[color:var(--acid)]">← sign in</button>}
