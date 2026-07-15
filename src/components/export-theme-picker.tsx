@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { THEMES, type ExportTheme } from "@/lib/export-themes";
 import { Download, X, Check } from "lucide-react";
+import { MagneticButton } from "@/components/magnetic-button";
 
 /** Small preview thumbnail (HTML/CSS) for each theme. */
 function Thumb({ theme, score }: { theme: ExportTheme; score: number }) {
@@ -81,10 +82,10 @@ export function ExportThemePicker({
               </div>
               <div className="flex items-center justify-end gap-2 border-t border-border/60 bg-surface-2/40 px-4 py-3">
                 <button onClick={() => setOpen(false)} className="rounded-md border border-border bg-background px-3 py-1.5 font-mono text-xs text-muted-foreground hover:text-foreground">cancel</button>
-                <button onClick={run} disabled={busy}
+                <MagneticButton onClick={run} disabled={busy}
                   className="inline-flex items-center gap-2 rounded-md bg-[color:var(--acid)] px-3 py-1.5 font-mono text-xs font-semibold text-[color:var(--acid-foreground)] disabled:opacity-60">
                   <Download className="h-3 w-3" /> {busy ? "rendering…" : "download pdf"}
-                </button>
+                </MagneticButton>
               </div>
             </motion.div>
           </motion.div>
