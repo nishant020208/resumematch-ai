@@ -47,7 +47,7 @@ export function CommandPalette() {
       { id: "ins", label: "Skill insights", icon: Sparkles, run: nav("/insights") },
     );
     base.push(
-      { id: "theme", label: `Toggle theme (currently ${theme})`, icon: theme === "dark" ? Sun : Moon, run: () => { toggle(); setOpen(false); } },
+      { id: "theme", label: `Toggle theme (currently ${theme})`, icon: theme === "dark" ? Sun : Moon, run: () => { toggle(); setOpen(false); }, keywords: "settings dark light mode appearance preferences" },
     );
     if (user) base.push({ id: "signout", label: "Sign out", icon: LogOut, run: async () => { setOpen(false); await supabase.auth.signOut(); router.navigate({ to: "/" }); } });
     else base.push({ id: "signin", label: "Sign in", icon: LogIn, run: nav("/auth") });

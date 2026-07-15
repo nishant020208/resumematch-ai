@@ -5,6 +5,8 @@ import { PageShell } from "@/components/page-shell";
 import { Ambient } from "@/components/ambient";
 import { PrivacyBadge } from "@/components/privacy-badge";
 import { TiltCard } from "@/components/tilt-card";
+import { HeroMesh } from "@/components/hero-mesh";
+import { Reveal } from "@/components/reveal";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -15,6 +17,7 @@ function Landing() {
     <PageShell>
       <section className="relative overflow-hidden">
         <Ambient />
+        <HeroMesh />
         <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-24 sm:px-6 sm:pt-24 sm:pb-32">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <PrivacyBadge />
@@ -67,19 +70,19 @@ function Landing() {
       <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <div className="grid gap-4 md:grid-cols-3">
           {FEATURES.map((f, i) => (
-            <motion.div key={f.title} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
+            <Reveal key={f.title} delay={i * 80}>
               <TiltCard className="h-full">
                 <f.icon className="h-6 w-6 text-[color:var(--acid)]" />
                 <h3 className="mt-4 font-mono text-sm uppercase tracking-wider">{f.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
               </TiltCard>
-            </motion.div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
-        <div className="surface-card overflow-hidden">
+        <Reveal className="surface-card overflow-hidden block">
           <div className="border-b border-border/60 bg-surface-2 px-5 py-2 font-mono text-xs text-muted-foreground">
             <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[color:var(--danger)]"></span>
             <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[color:var(--warn)]"></span>
@@ -98,7 +101,7 @@ function Landing() {
 > `}<span className="text-[color:var(--acid)]">score: 74/100</span>
             </code>
           </pre>
-        </div>
+        </Reveal>
       </section>
     </PageShell>
   );
