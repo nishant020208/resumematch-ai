@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 type Props = {
   children: ReactNode;
@@ -11,9 +12,11 @@ type Props = {
 /** Scroll-triggered reveal (fade + slight upward slide). Fires once. */
 export function Reveal({ children, delay = 0, y = 16, className = "", as = "div" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
+    if (reduced) { setShown(true); return; }
     const el = ref.current;
     if (!el) return;
     if (typeof IntersectionObserver === "undefined") { setShown(true); return; }
@@ -22,9 +25,12 @@ export function Reveal({ children, delay = 0, y = 16, className = "", as = "div"
     }, { threshold: 0.14, rootMargin: "0px 0px -40px 0px" });
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [reduced]);
 
   const Tag = as as any;
+  if (reduced) {
+    return <Tag ref={ref} className={className}>{children}</Tag>;
+  }
   return (
     <Tag
       ref={ref}
