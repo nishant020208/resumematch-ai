@@ -35,7 +35,9 @@ describe("Reveal + prefers-reduced-motion", () => {
     expect(el).toBeTruthy();
     expect(el.textContent).toBe("hello");
     // Reduced motion returns the plain tag with no inline animation styles.
-    expect(el.getAttribute("style")).toBeNull();
+    expect(el.style.transition).toBe("");
+    expect(el.style.transform).toBe("");
+    expect(el.style.opacity).toBe("");
   });
 
   it("applies fade+translate transition styles when reduced motion is off", () => {
