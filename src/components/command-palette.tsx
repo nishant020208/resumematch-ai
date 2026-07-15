@@ -16,6 +16,8 @@ export function CommandPalette() {
   const { theme, toggle } = useTheme();
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
@@ -38,6 +40,34 @@ export function CommandPalette() {
   }, [open, user, router, toggle]);
 
   useEffect(() => { if (open) { setQ(""); setIdx(0); setTimeout(() => inputRef.current?.focus(), 40); } }, [open]);
+
+  // Save/restore focus + trap Tab within the dialog while open.
+  useEffect(() => {
+    if (!open) return;
+    lastFocused.current = (document.activeElement as HTMLElement) ?? null;
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) { e.preventDefault(); return; }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !root.contains(active))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && (active === last || !root.contains(active))) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    window.addEventListener("keydown", trap);
+    return () => {
+      window.removeEventListener("keydown", trap);
+      lastFocused.current?.focus?.();
+    };
+  }, [open]);
 
   const nav = (to: string) => () => { setOpen(false); router.navigate({ to } as any); };
   const cmds = useMemo<Cmd[]>(() => {
@@ -89,7 +119,8 @@ export function CommandPalette() {
             transition={{ duration: 0.18, ease: [0.2, 0.9, 0.2, 1] }}
             onClick={e => e.stopPropagation()}
             className="w-full max-w-lg overflow-hidden rounded-xl border border-border bg-surface shadow-2xl"
-            role="dialog" aria-label="Command palette"
+            role="dialog" aria-modal="true" aria-label="Command palette"
+            ref={dialogRef}
           >
             <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
               <Search className="h-4 w-4 text-muted-foreground" />
