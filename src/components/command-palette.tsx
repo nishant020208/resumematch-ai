@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Zap, LayoutDashboard, History, Layers, GitCompare, Sparkles, Sun, Moon, LogOut, LogIn, Package, ArrowRight } from "lucide-react";
 
-type Cmd = { id: string; label: string; hint?: string; icon: any; run: () => void; keywords?: string };
+type Cmd = { id: string; label: string; shortcut?: string[]; icon: any; run: () => void; keywords?: string };
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -24,10 +24,18 @@ export function CommandPalette() {
       } else if (e.key === "Escape" && open) {
         setOpen(false);
       }
+      // Compare mode: Cmd/Ctrl + Shift + C
+      else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "c" && user) {
+        e.preventDefault(); setOpen(false); router.navigate({ to: "/compare" } as any);
+      }
+      // Settings / theme toggle: Cmd/Ctrl + ,
+      else if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault(); toggle();
+      }
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
-  }, [open]);
+  }, [open, user, router, toggle]);
 
   useEffect(() => { if (open) { setQ(""); setIdx(0); setTimeout(() => inputRef.current?.focus(), 40); } }, [open]);
 
@@ -41,13 +49,13 @@ export function CommandPalette() {
       { id: "dash", label: "Dashboard", icon: LayoutDashboard, run: nav("/dashboard") },
       { id: "hist", label: "History", icon: History, run: nav("/history") },
       { id: "res", label: "Resumes", icon: Package, run: nav("/resumes") },
-      { id: "comp", label: "Compare scans", icon: GitCompare, run: nav("/compare") },
+      { id: "comp", label: "Compare scans", icon: GitCompare, run: nav("/compare"), shortcut: ["⌘", "⇧", "C"], keywords: "compare mode" },
       { id: "diff", label: "Compare resume versions", icon: Layers, run: nav("/resume-diff") },
       { id: "batch", label: "Batch — one resume vs many JDs", icon: Layers, run: nav("/batch") },
       { id: "ins", label: "Skill insights", icon: Sparkles, run: nav("/insights") },
     );
     base.push(
-      { id: "theme", label: `Toggle theme (currently ${theme})`, icon: theme === "dark" ? Sun : Moon, run: () => { toggle(); setOpen(false); }, keywords: "settings dark light mode appearance preferences" },
+      { id: "theme", label: `Settings — toggle theme (currently ${theme})`, icon: theme === "dark" ? Sun : Moon, run: () => { toggle(); setOpen(false); }, shortcut: ["⌘", ","], keywords: "settings dark light mode appearance preferences" },
     );
     if (user) base.push({ id: "signout", label: "Sign out", icon: LogOut, run: async () => { setOpen(false); await supabase.auth.signOut(); router.navigate({ to: "/" }); } });
     else base.push({ id: "signin", label: "Sign in", icon: LogIn, run: nav("/auth") });
@@ -103,7 +111,14 @@ export function CommandPalette() {
                   >
                     <c.icon className={`h-4 w-4 ${i === idx ? "text-[color:var(--acid)]" : ""}`} />
                     <span className="flex-1">{c.label}</span>
-                    {i === idx && <ArrowRight className="h-3 w-3 text-[color:var(--acid)]" />}
+                    {c.shortcut && (
+                      <span className="flex items-center gap-1">
+                        {c.shortcut.map((k, ki) => (
+                          <kbd key={ki} className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{k}</kbd>
+                        ))}
+                      </span>
+                    )}
+                    {i === idx && !c.shortcut && <ArrowRight className="h-3 w-3 text-[color:var(--acid)]" />}
                   </button>
                 </li>
               ))}
