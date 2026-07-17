@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CustomCursor } from "@/components/custom-cursor";
 import { CursorGlow } from "@/components/cursor-glow";
 import { CommandPalette } from "@/components/command-palette";
+import { LiveRegion } from "@/components/live-region";
 
 function NotFoundComponent() {
   return (
@@ -152,6 +153,7 @@ function RootComponent() {
           <CustomCursor />
           <Outlet />
           <CommandPalette />
+          <LiveRegion />
           <Toaster />
         </AuthProvider>
       </ThemeProvider>
