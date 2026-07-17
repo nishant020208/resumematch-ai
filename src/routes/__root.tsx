@@ -146,6 +146,7 @@ function RootComponent() {
   }, []);
 
   return (
+    // Root layout shell: providers, global UI effects, and route outlet.
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
