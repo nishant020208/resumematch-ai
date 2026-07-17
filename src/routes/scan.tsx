@@ -20,6 +20,7 @@ import { KeywordCloud } from "@/components/keyword-cloud";
 import { AtsFixer } from "@/components/ats-fixer";
 import { MagneticButton } from "@/components/magnetic-button";
 import { Reveal } from "@/components/reveal";
+import { announce } from "@/components/live-region";
 import { evaluateUnlocks, computeStreak } from "@/lib/achievements";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +79,7 @@ function ScanPage() {
     try {
       const r = await analyze(resume, jd);
       setResult(r);
+      announce(`Match analysis complete. Score ${r.score} percent. ${r.matched.length} matched keywords, ${r.missing.length} missing.`);
       if (user) {
         const chosen = resumes.find(x => x.id === pickedResumeId);
         await supabase.from("scans").insert({
@@ -99,6 +101,7 @@ function ScanPage() {
       if (user) void unlockAchievements(user.id, r.score, resumes.length);
     } catch (e: any) {
       toast.error(e?.message ?? "Analysis failed");
+      announce("Analysis failed. Please try again.");
     } finally { setRunning(false); }
   };
 
@@ -248,10 +251,26 @@ function ScanPage() {
               <Play className="h-4 w-4" /> {running ? "analyzing…" : "analyze"}
             </MagneticButton>
             {progress && progress.status !== "ready" && (
-              <span className="font-mono text-xs text-muted-foreground">
-                loading model{progress.progress != null ? ` · ${Math.round(progress.progress)}%` : "…"}
-                {progress.file && <> · {progress.file}</>}
-              </span>
+              <div
+                className="flex min-w-[240px] flex-1 flex-col gap-1"
+                role="status"
+                aria-live="polite"
+                aria-label={`Loading matching model${progress.progress != null ? `, ${Math.round(progress.progress)}% complete` : ""}`}
+              >
+                <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin text-[color:var(--acid)]" />
+                    loading match model{progress.progress != null ? ` · ${Math.round(progress.progress)}%` : "…"}
+                  </span>
+                  {progress.file && <span className="truncate max-w-[180px]">{progress.file}</span>}
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    className="h-full bg-[color:var(--acid)] transition-[width] duration-300"
+                    style={{ width: `${progress.progress != null ? Math.min(100, Math.round(progress.progress)) : 8}%` }}
+                  />
+                </div>
+              </div>
             )}
           </div>
 

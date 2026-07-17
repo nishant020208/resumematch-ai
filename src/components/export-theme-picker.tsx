@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { THEMES, type ExportTheme } from "@/lib/export-themes";
 import { Download, X, Check } from "lucide-react";
 import { MagneticButton } from "@/components/magnetic-button";
+import { announce } from "@/components/live-region";
 
 /** Small preview thumbnail (HTML/CSS) for each theme. */
 function Thumb({ theme, score }: { theme: ExportTheme; score: number }) {
@@ -47,7 +48,15 @@ export function ExportThemePicker({
 
   const run = async () => {
     setBusy(true);
-    try { await onExport(selected); setOpen(false); } finally { setBusy(false); }
+    announce(`Preparing ${selected} PDF export…`);
+    try {
+      await onExport(selected);
+      announce("PDF export ready. Download started.");
+      setOpen(false);
+    } catch (e: any) {
+      announce(`Export failed: ${e?.message ?? "unknown error"}`);
+      throw e;
+    } finally { setBusy(false); }
   };
 
   return (
