@@ -8,6 +8,13 @@ import { TiltCard } from "@/components/tilt-card";
 import { HeroMesh } from "@/components/hero-mesh";
 import { Reveal } from "@/components/reveal";
 
+if (typeof window !== 'undefined') {
+  const meta = document.createElement('meta');
+  meta.name = 'google-site-verification';
+  meta.content = 'xT3cZi5I3kEzJBtiGLDJRh8DSeQELOg4lAIbz5fuTqE'; 
+  document.head.appendChild(meta);
+}
+
 export const Route = createFileRoute("/")({
   component: Landing,
 });
